@@ -1,70 +1,61 @@
 package com.example.videoapp.service.impl;
 
-import com.example.videoapp.converter.VideoMapper;
 import com.example.videoapp.dto.NuovoVideoInputDto;
-import com.example.videoapp.dto.VideoOutputDto;
 import com.example.videoapp.model.User;
 import com.example.videoapp.model.Video;
 import com.example.videoapp.repository.UserRepository;
 import com.example.videoapp.repository.VideoRepository;
+import com.example.videoapp.service.StorageService;
 import com.example.videoapp.service.VideoService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.*;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.nio.file.*;
+import java.nio.file.NoSuchFileException;
 import java.util.*;
 
 @Service
 public class VideoServiceImpl implements VideoService {
+    
+    private static final Logger logger = LoggerFactory.getLogger(VideoServiceImpl.class);
 
     @Autowired
     private VideoRepository videoRepository;
 
     @Autowired
     private UserRepository userRepository;
-
+    
     @Autowired
-    private VideoMapper videoMapper;
-
-    @Value("${videoapp.upload.dir}")
-    private String uploadDir;
+    private StorageService storageService;
 
     @Override
-    public ResponseEntity<Page<VideoOutputDto>> getVideos(int page, int size, Long userId, Boolean isPublic) {
+    public Page<Video> getVideos(int page, int size, Long userId, Boolean isPublic) {
         if (size > 10) size = 10;
         Pageable pageable = PageRequest.of(Math.max(page - 1, 0), size);
-        Page<Video> videos;
 
         if (userId != null && isPublic != null) {
-            videos = videoRepository.findByUserIdAndIsPublic(userId, isPublic, pageable);
+            return videoRepository.findByUserIdAndIsPublic(userId, isPublic, pageable);
         } else if (userId != null) {
-            videos = videoRepository.findByUserId(userId, pageable);
+            return videoRepository.findByUserId(userId, pageable);
         } else if (isPublic != null) {
-            videos = videoRepository.findByIsPublic(isPublic, pageable);
+            return videoRepository.findByIsPublic(isPublic, pageable);
         } else {
-            videos = videoRepository.findAll(pageable);
+            return videoRepository.findAll(pageable);
         }
-
-        Page<VideoOutputDto> dtoPage = videos.map(videoMapper::toDto);
-        return ResponseEntity.ok(dtoPage);
     }
 
     @Override
-    public ResponseEntity<VideoOutputDto> getVideoById(Long id) {
+    public Video getVideoById(Long id) {
         return videoRepository.findById(id)
-                .map(video -> ResponseEntity.ok(videoMapper.toDto(video)))
                 .orElseThrow(() -> new NoSuchElementException("Video con id " + id + " non trovato"));
     }
 
     @Override
-    public ResponseEntity<String> uploadVideo(NuovoVideoInputDto dto, MultipartFile file) throws IOException {
+    public Video uploadVideo(NuovoVideoInputDto dto, MultipartFile file) throws IOException {
         if (dto.getUserId() == null) {
             throw new IllegalArgumentException("User ID è obbligatorio");
         }
@@ -76,29 +67,25 @@ public class VideoServiceImpl implements VideoService {
         User user = userRepository.findById(dto.getUserId())
             .orElseThrow(() -> new NoSuchElementException("User con id " + dto.getUserId() + " non trovato"));
 
-        String filename = System.currentTimeMillis() + "_" + file.getOriginalFilename();
-        Path uploadPath = Paths.get(uploadDir);
-        
         try {
-            if (!Files.exists(uploadPath)) {
-                Files.createDirectories(uploadPath);
-            }
-
-            Path filePath = uploadPath.resolve(filename);
-            Files.write(filePath, file.getBytes());
-
+            // Utilizza il StorageService per salvare il file
+            String savedFilename = storageService.store(file);
+            
             Video video = new Video(dto.getTitle(), dto.getDescription(), dto.isPublic(), user);
-            video.setFilePath(filename);
-            videoRepository.save(video);
-
-            return ResponseEntity.ok("Video caricato con successo");
+            video.setFilePath(savedFilename);
+            
+            Video savedVideo = videoRepository.save(video);
+            logger.info("Video uploaded successfully with ID: {} and file: {}", savedVideo.getId(), savedFilename);
+            
+            return savedVideo;
         } catch (IOException e) {
-            throw new IOException("Errore durante il salvataggio del file: " + e.getMessage(), e);
+            logger.error("Error uploading video for user {}: {}", dto.getUserId(), e.getMessage());
+            throw new IOException("Errore durante il caricamento del video: " + e.getMessage(), e);
         }
     }
 
     @Override
-    public ResponseEntity<VideoOutputDto> updateVideoWithFile(Long id, String title, String description, boolean isPublic, MultipartFile file) throws IOException {
+    public Video updateVideoWithFile(Long id, String title, String description, boolean isPublic, MultipartFile file) throws IOException {
         Video video = videoRepository.findById(id)
             .orElseThrow(() -> new NoSuchElementException("Video con id " + id + " non trovato"));
         
@@ -108,49 +95,47 @@ public class VideoServiceImpl implements VideoService {
 
         if (file != null && !file.isEmpty()) {
             try {
+                // Elimina il file precedente se esiste
                 if (video.getFilePath() != null) {
-                    Path oldFilePath = Paths.get(uploadDir, video.getFilePath());
-                    Files.deleteIfExists(oldFilePath);
+                    storageService.deleteFile(video.getFilePath());
                 }
 
-                String filename = System.currentTimeMillis() + "_" + file.getOriginalFilename();
-                Path uploadPath = Paths.get(uploadDir);
-                if (!Files.exists(uploadPath)) {
-                    Files.createDirectories(uploadPath);
-                }
-
-                Path filePath = uploadPath.resolve(filename);
-                Files.write(filePath, file.getBytes());
-                video.setFilePath(filename);
+                // Salva il nuovo file
+                String savedFilename = storageService.store(file);
+                video.setFilePath(savedFilename);
+                
+                logger.info("Video file updated for video ID: {} with new file: {}", id, savedFilename);
             } catch (IOException e) {
+                logger.error("Error updating video file for video ID {}: {}", id, e.getMessage());
                 throw new IOException("Errore durante l'aggiornamento del file: " + e.getMessage(), e);
             }
         }
 
-        videoRepository.save(video);
-        return ResponseEntity.ok(videoMapper.toDto(video));
+        return videoRepository.save(video);
     }
 
     @Override
-    public ResponseEntity<Void> deleteVideo(Long id) {
+    public void deleteVideo(Long id) {
         Video video = videoRepository.findById(id)
             .orElseThrow(() -> new NoSuchElementException("Video con id " + id + " non trovato"));
 
+        // Elimina il file dal filesystem
         if (video.getFilePath() != null) {
-            Path videoPath = Paths.get(uploadDir, video.getFilePath());
             try {
-                Files.deleteIfExists(videoPath);
+                storageService.deleteFile(video.getFilePath());
+                logger.info("File deleted for video ID: {}", id);
             } catch (IOException e) {
-                System.err.println("Errore durante l'eliminazione del file: " + e.getMessage());
+                logger.error("Error deleting file for video ID {}: {}", id, e.getMessage());
+                // Non interrompiamo l'eliminazione del video anche se il file non può essere eliminato
             }
         }
 
         videoRepository.delete(video);
-        return ResponseEntity.noContent().build();
+        logger.info("Video deleted with ID: {}", id);
     }
 
     @Override
-    public ResponseEntity<byte[]> getVideoFile(Long id) throws IOException {
+    public byte[] getVideoFile(Long id) throws IOException {
         Video video = videoRepository.findById(id)
             .orElseThrow(() -> new NoSuchElementException("Video con id " + id + " non trovato"));
 
@@ -158,30 +143,26 @@ public class VideoServiceImpl implements VideoService {
             throw new IllegalStateException("Il video non ha un file associato");
         }
 
-        Path videoPath = Paths.get(uploadDir, video.getFilePath());
-        
-        if (!Files.exists(videoPath)) {
-            throw new NoSuchFileException("File video non trovato: " + video.getFilePath());
-        }
-
         try {
-            byte[] content = Files.readAllBytes(videoPath);
-            String contentType = Files.probeContentType(videoPath);
-            if (contentType == null) {
-                contentType = "video/mp4";
-            }
-
-            return ResponseEntity.ok()
-                    .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + video.getFilePath() + "\"")
-                    .contentType(MediaType.parseMediaType(contentType))
-                    .body(content);
+            return storageService.loadFile(video.getFilePath());
+        } catch (NoSuchFileException e) {
+            logger.error("File not found for video ID {}: {}", id, video.getFilePath());
+            throw new NoSuchFileException("File video non trovato: " + video.getFilePath());
         } catch (IOException e) {
+            logger.error("Error reading file for video ID {}: {}", id, e.getMessage());
             throw new IOException("Errore durante la lettura del file: " + e.getMessage(), e);
         }
     }
 
     @Override
-    public ResponseEntity<byte[]> downloadVideoFile(Long id) throws IOException {
+    public byte[] downloadVideoFile(Long id) throws IOException {
+        // Per il download, la logica è la stessa del getVideoFile
+        // La differenza sarà gestita nel controller con gli headers appropriati
+        return getVideoFile(id);
+    }
+
+    @Override
+    public String getVideoContentType(Long id) throws IOException {
         Video video = videoRepository.findById(id)
             .orElseThrow(() -> new NoSuchElementException("Video con id " + id + " non trovato"));
 
@@ -189,35 +170,33 @@ public class VideoServiceImpl implements VideoService {
             throw new IllegalStateException("Il video non ha un file associato");
         }
 
-        Path videoPath = Paths.get(uploadDir, video.getFilePath());
-        
-        if (!Files.exists(videoPath)) {
-            throw new NoSuchFileException("File video non trovato: " + video.getFilePath());
-        }
-
         try {
-            byte[] content = Files.readAllBytes(videoPath);
-            String contentType = Files.probeContentType(videoPath);
-            if (contentType == null) {
-                contentType = "application/octet-stream";
-            }
-
-            String downloadFileName = video.getTitle() != null && !video.getTitle().trim().isEmpty() 
-                ? sanitizeFileName(video.getTitle()) + getFileExtension(video.getFilePath())
-                : video.getFilePath();
-
-            return ResponseEntity.ok()
-                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + downloadFileName + "\"")
-                    .contentType(MediaType.parseMediaType(contentType))
-                    .contentLength(content.length)
-                    .body(content);
+            return storageService.getContentType(video.getFilePath());
+        } catch (NoSuchFileException e) {
+            logger.error("File not found for video ID {}: {}", id, video.getFilePath());
+            throw new NoSuchFileException("File video non trovato: " + video.getFilePath());
         } catch (IOException e) {
-            throw new IOException("Errore durante la lettura del file per il download: " + e.getMessage(), e);
+            logger.error("Error getting content type for video ID {}: {}", id, e.getMessage());
+            throw new IOException("Errore durante il recupero del tipo di contenuto: " + e.getMessage(), e);
         }
     }
 
     @Override
-    public ResponseEntity<VideoOutputDto> updateVideo(Long id, Map<String, Object> updates) {
+    public String getVideoFileName(Long id) {
+        Video video = videoRepository.findById(id)
+            .orElseThrow(() -> new NoSuchElementException("Video con id " + id + " non trovato"));
+
+        if (video.getTitle() != null && !video.getTitle().trim().isEmpty()) {
+            String sanitizedTitle = storageService.sanitizeFileName(video.getTitle());
+            String extension = storageService.getFileExtension(video.getFilePath());
+            return sanitizedTitle + extension;
+        }
+        
+        return video.getFilePath();
+    }
+
+    @Override
+    public Video updateVideo(Long id, Map<String, Object> updates) {
         Video video = videoRepository.findById(id)
             .orElseThrow(() -> new NoSuchElementException("Video con id " + id + " non trovato"));
 
@@ -247,22 +226,8 @@ public class VideoServiceImpl implements VideoService {
             }
         });
 
-        videoRepository.save(video);
-        return ResponseEntity.ok(videoMapper.toDto(video));
-    }
-
-    private String sanitizeFileName(String fileName) {
-        if (fileName == null) return "video";
-        
-        return fileName.replaceAll("[^a-zA-Z0-9._-]", "_")
-                      .replaceAll("_{2,}", "_")
-                      .trim();
-    }
-
-    private String getFileExtension(String filePath) {
-        if (filePath == null) return "";
-        
-        int lastDotIndex = filePath.lastIndexOf('.');
-        return lastDotIndex != -1 ? filePath.substring(lastDotIndex) : "";
+        Video updatedVideo = videoRepository.save(video);
+        logger.info("Video metadata updated for ID: {}", id);
+        return updatedVideo;
     }
 }
