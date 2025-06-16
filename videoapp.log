@@ -38,3 +38,47 @@
 	or Spring HATEOAS and Spring Data's PagedResourcesAssembler as documented in https://docs.spring.io/spring-data/commons/reference/repositories/core-extensions.html#core.web.pageables.
 
 2025-06-13T11:11:50.344+02:00  WARN 3704 --- [HikariPool-1 housekeeper] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Thread starvation or clock leap detected (housekeeper delta=10m26s304ms602µs700ns).
+2025-06-13T11:15:27.778+02:00  INFO 28308 --- [main] c.example.videoapp.VideoappApplication   : Starting VideoappApplication using Java 17.0.14 with PID 28308 (C:\Users\A568apulia\VideoWorkSpace\videoapp\build\classes\java\main started by A568apulia in C:\Users\A568apulia\VideoWorkSpace\videoapp)
+2025-06-13T11:15:27.780+02:00 DEBUG 28308 --- [main] c.example.videoapp.VideoappApplication   : Running with Spring Boot v3.4.3, Spring v6.2.3
+2025-06-13T11:15:27.780+02:00  INFO 28308 --- [main] c.example.videoapp.VideoappApplication   : No active profile set, falling back to 1 default profile: "default"
+2025-06-13T11:15:28.359+02:00  INFO 28308 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2025-06-13T11:15:28.434+02:00  INFO 28308 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 66 ms. Found 2 JPA repository interfaces.
+2025-06-13T11:15:29.238+02:00  INFO 28308 --- [main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port 8080 (http)
+2025-06-13T11:15:29.252+02:00  INFO 28308 --- [main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2025-06-13T11:15:29.253+02:00  INFO 28308 --- [main] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/10.1.36]
+2025-06-13T11:15:29.338+02:00  INFO 28308 --- [main] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring embedded WebApplicationContext
+2025-06-13T11:15:29.338+02:00  INFO 28308 --- [main] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 1519 ms
+2025-06-13T11:15:29.553+02:00  INFO 28308 --- [main] o.hibernate.jpa.internal.util.LogHelper  : HHH000204: Processing PersistenceUnitInfo [name: default]
+2025-06-13T11:15:29.613+02:00  INFO 28308 --- [main] org.hibernate.Version                    : HHH000412: Hibernate ORM core version 6.6.8.Final
+2025-06-13T11:15:29.646+02:00  INFO 28308 --- [main] o.h.c.internal.RegionFactoryInitiator    : HHH000026: Second-level cache disabled
+2025-06-13T11:15:29.861+02:00  INFO 28308 --- [main] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+2025-06-13T11:15:29.925+02:00  INFO 28308 --- [main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+2025-06-13T11:15:30.228+02:00  INFO 28308 --- [main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection com.mysql.cj.jdbc.ConnectionImpl@b0d3e7
+2025-06-13T11:15:30.232+02:00  INFO 28308 --- [main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+2025-06-13T11:15:30.385+02:00  INFO 28308 --- [main] org.hibernate.orm.connections.pooling    : HHH10001005: Database info:
+	Database JDBC URL [Connecting through datasource 'HikariDataSource (HikariPool-1)']
+	Database driver: undefined/unknown
+	Database version: 8.0.37
+	Autocommit mode: undefined/unknown
+	Isolation level: undefined/unknown
+	Minimum pool size: undefined/unknown
+	Maximum pool size: undefined/unknown
+2025-06-13T11:15:31.255+02:00  INFO 28308 --- [main] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2025-06-13T11:15:31.317+02:00  INFO 28308 --- [main] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+2025-06-13T11:15:31.551+02:00 DEBUG 28308 --- [main] c.e.v.filter.JwtAuthenticationFilter     : Filter 'jwtAuthenticationFilter' configured for use
+2025-06-13T11:15:31.594+02:00  INFO 28308 --- [main] c.e.v.service.impl.StorageServiceImpl    : Storage service initialized with directory: C:\Users\A568apulia\videoapp\uploads
+2025-06-13T11:15:31.661+02:00  WARN 28308 --- [main] JpaBaseConfiguration$JpaWebConfiguration : spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
+2025-06-13T11:15:31.692+02:00  INFO 28308 --- [main] r$InitializeUserDetailsManagerConfigurer : Global AuthenticationManager configured with UserDetailsService bean with name customUserDetailsService
+2025-06-13T11:15:32.194+02:00  INFO 28308 --- [main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat started on port 8080 (http) with context path '/'
+2025-06-13T11:15:32.203+02:00  INFO 28308 --- [main] c.example.videoapp.VideoappApplication   : Started VideoappApplication in 4.882 seconds (process running for 5.191)
+2025-06-13T11:15:45.918+02:00  INFO 28308 --- [http-nio-8080-exec-1] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring DispatcherServlet 'dispatcherServlet'
+2025-06-13T11:15:45.919+02:00  INFO 28308 --- [http-nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : Initializing Servlet 'dispatcherServlet'
+2025-06-13T11:15:45.920+02:00  INFO 28308 --- [http-nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : Completed initialization in 1 ms
+2025-06-13T11:15:46.284+02:00  WARN 28308 --- [http-nio-8080-exec-6] ration$PageModule$WarningLoggingModifier : Serializing PageImpl instances as-is is not supported, meaning that there is no guarantee about the stability of the resulting JSON structure!
+	For a stable JSON structure, please use Spring Data's PagedModel (globally via @EnableSpringDataWebSupport(pageSerializationMode = VIA_DTO))
+	or Spring HATEOAS and Spring Data's PagedResourcesAssembler as documented in https://docs.spring.io/spring-data/commons/reference/repositories/core-extensions.html#core.web.pageables.
+
+2025-06-13T12:09:59.701+02:00  WARN 28308 --- [HikariPool-1 housekeeper] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Thread starvation or clock leap detected (housekeeper delta=2m58s591ms939µs100ns).
+2025-06-13T12:55:08.306+02:00  WARN 28308 --- [HikariPool-1 housekeeper] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Thread starvation or clock leap detected (housekeeper delta=22m8s254ms174µs900ns).
+2025-06-13T14:35:07.022+02:00  WARN 28308 --- [HikariPool-1 housekeeper] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Thread starvation or clock leap detected (housekeeper delta=1h25m28s470ms995µs900ns).
+2025-06-13T15:43:58.734+02:00  WARN 28308 --- [HikariPool-1 housekeeper] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Thread starvation or clock leap detected (housekeeper delta=3m50s653ms261µs200ns).
